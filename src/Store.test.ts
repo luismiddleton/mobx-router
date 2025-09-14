@@ -92,7 +92,8 @@ describe("RouterStore", () => {
     store.matchRoutes(routes, NotFoundComponent);
     const disposeReaction = store.disposeReaction!;
     const disposeReactionSpy = vi.fn(disposeReaction);
-    store.disposeReaction = disposeReactionSpy;
+    // @ts-ignore
+    store.disposeReaction = vi.fn(() => disposeReactionSpy());
 
     store.dispose();
 

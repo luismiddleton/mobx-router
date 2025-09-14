@@ -5,6 +5,7 @@ import {
   reaction,
   action,
   IReactionDisposer,
+  computed,
 } from "mobx";
 import { Route } from "./Store.types";
 
@@ -29,11 +30,6 @@ class RouterStore {
    */
   isLoading = false;
   /**
-   * The component to display while a route is loading.
-   * @observable
-   */
-  loadingComponent: ReactElement | null = null;
-  /**
    * A disposer for the MobX reaction to prevent memory leaks.
    */
   disposeReaction: IReactionDisposer | null = null;
@@ -44,10 +40,11 @@ class RouterStore {
   constructor() {
     makeObservable(this, {
       location: observable,
-      activeComponent: observable,
       isLoading: observable,
-      loadingComponent: observable,
+      activeComponent: observable.ref,
       navigate: action,
+      setActiveComponent: action,
+      renderComponent: computed,
     });
     window.addEventListener("popstate", this.handlePopState);
   }
@@ -90,8 +87,20 @@ class RouterStore {
    * Handles the browser's popstate event to update the location.
    */
   handlePopState = action("handlePopState", () => {
-    this.location = this.parsePath(window.location.href);
+    const newLocation = this.parsePath(window.location.href);
+    // Explicitly update the properties of the observable object
+    this.location.pathname = newLocation.pathname;
+    this.location.search = newLocation.search;
+    this.location.hash = newLocation.hash;
   });
+
+  /**
+   * Sets the active component to be rendered.
+   * @param component - The React component to set as active.
+   */
+  setActiveComponent(component: ReactElement) {
+    this.activeComponent = component;
+  }
 
   /**
    * Sets up a MobX reaction to match the current path against a list of routes
@@ -104,25 +113,21 @@ class RouterStore {
       () => this.location.pathname,
       (pathname) => {
         const matchingRoute = routes.find((route) => route.path === pathname);
-
-        // Start the loading state and set the specific loading component from the route
-        this.isLoading = true;
-        this.activeComponent = null; // Clear the previous component
-        this.loadingComponent = matchingRoute?.loadingComponent ?? null;
-
-        if (matchingRoute) {
-          this.activeComponent = matchingRoute.component;
-        } else {
-          this.activeComponent = NotFoundComponent;
-        }
-        // End the loading state after the component is ready
-        this.isLoading = false;
-        // Clean up the loading component state
-        this.loadingComponent = null;
+        
+        this.setActiveComponent(
+          matchingRoute ? matchingRoute.component : NotFoundComponent
+        );
       },
-      { fireImmediately: true }
+      { fireImmediately: true, name: "Route Matching Reaction" }
     );
   };
+
+  /**
+   * Renders the currently active component
+   */
+  get renderComponent() {
+    return this.activeComponent!;
+  }
 
   /**
    * Cleans up resources, removing event listeners and disposing of MobX reactions

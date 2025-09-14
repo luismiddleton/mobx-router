@@ -11,7 +11,6 @@ A minimal, observable-first router for React apps, powered by MobX. This library
 - [Setup](#setup)
 - [Development](#development)
 - [Example App](#example-app)
-- [License](#license)
 
 ## Purpose
 

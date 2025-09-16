@@ -20,6 +20,11 @@ const routes: Route[] = [
         children: [
           {
             path: "member",
+            loader: async () => {
+              // Simulate a network request
+              return new Promise((resolve) => setTimeout(resolve, 1000));
+            },
+            loadingComponent: <div>Loading Team Member...</div>,
             component: <div>Team Member Page</div>,
           },
         ],

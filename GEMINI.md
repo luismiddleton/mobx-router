@@ -58,6 +58,9 @@ pnpm test:coverage
 
 # Development Conventions
 
+## Specification
+Specifications can be found in `.specification`
+
 ## Coding Style
 
 The project uses TypeScript and follows standard React and MobX conventions. The code is organized into a `src` directory with a main `Store.ts` file that contains the core logic of the router.

@@ -111,16 +111,52 @@ class RouterStore {
   matchRoutes = (routes: Route[], NotFoundComponent: ReactElement) => {
     this.disposeReaction = reaction(
       () => this.location.pathname,
-      (pathname) => {
-        const matchingRoute = this.findMatchingRoute(routes, pathname);
-
-        this.setActiveComponent(
-          matchingRoute ? matchingRoute.component : NotFoundComponent
-        );
-      },
+      (pathname) => this.handleRouteMatch(routes, pathname, NotFoundComponent),
       { fireImmediately: true, name: "Route Matching Reaction" }
     );
   };
+
+  /**
+   * Handles the logic for matching a route and updating the store.
+   * @param {Route[]} routes - An array of route objects.
+   * @param {string} pathname - The current pathname to match against.
+   * @param {ReactElement} NotFoundComponent - The component to display when no route matches.
+   */
+  private async handleRouteMatch(
+    routes: Route[],
+    pathname: string,
+    NotFoundComponent: ReactElement
+  ) {
+    const matchingRoute = this.findMatchingRoute(routes, pathname);
+
+    if (!matchingRoute) {
+      this.setActiveComponent(NotFoundComponent);
+      return;
+    }
+
+    if (!matchingRoute.loader) {
+      this.setActiveComponent(matchingRoute.component);
+      return;
+    }
+
+    this.isLoading = true;
+    if (matchingRoute.loadingComponent) {
+      this.setActiveComponent(matchingRoute.loadingComponent);
+    }
+
+    try {
+      await matchingRoute.loader();
+      this.setActiveComponent(matchingRoute.component);
+    } catch (error) {
+      if (matchingRoute.onLoaderError) {
+        matchingRoute.onLoaderError(error);
+      } else {
+        console.error("Loader error:", error);
+      }
+    } finally {
+      this.isLoading = false;
+    }
+  }
 
   /**
    * Recursively searches for a matching route in the routes array.

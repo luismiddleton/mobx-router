@@ -61,5 +61,6 @@ const routes: Route[] = [
 
 - Ensure unique paths for each route.
 - Support for dynamic segments and route parameters.
+- A path can support dynamic parameters, e.g. `/:user`
 - Only await the `loader` if the route path deeply equals the pathname.
 - Handle fallback or 404 routes at any nesting level.

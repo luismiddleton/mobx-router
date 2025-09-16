@@ -113,7 +113,7 @@ describe("RouterStore", () => {
             component: AboutComponent,
             children: [
               {
-                path: "/team",
+                path: "team",
                 component: TeamComponent,
               },
             ],
@@ -138,6 +138,40 @@ describe("RouterStore", () => {
       store.matchRoutes(nestedRoutes, NotFoundComponent);
       store.navigate("/about/unknown");
       expect(store.activeComponent).toStrictEqual(NotFoundComponent);
+    });
+  });
+
+  describe("with loaders", () => {
+    const LoadingComponent = { type: "div", props: { children: "Loading" } } as ReactElement;
+    const loader = vi.fn(() => Promise.resolve());
+    const loaderRoutes: Route[] = [
+      {
+        path: "/",
+        component: HomeComponent,
+        loader,
+        loadingComponent: LoadingComponent,
+      },
+    ];
+
+    it("should show the loading component while the loader is running", async () => {
+      store.matchRoutes(loaderRoutes, NotFoundComponent);
+      expect(store.isLoading).toBe(true);
+      expect(store.activeComponent).toStrictEqual(LoadingComponent);
+      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for loader to resolve
+      expect(store.isLoading).toBe(false);
+      expect(store.activeComponent).toStrictEqual(HomeComponent);
+    });
+
+    it("should call the loader function when a route matches", () => {
+      store.matchRoutes(loaderRoutes, NotFoundComponent);
+      expect(loader).toHaveBeenCalled();
+    });
+
+    it("should set isLoading to true and false", async () => {
+      store.matchRoutes(loaderRoutes, NotFoundComponent);
+      expect(store.isLoading).toBe(true);
+      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for loader to resolve
+      expect(store.isLoading).toBe(false);
     });
   });
 });

@@ -112,8 +112,8 @@ class RouterStore {
     this.disposeReaction = reaction(
       () => this.location.pathname,
       (pathname) => {
-        const matchingRoute = routes.find((route) => route.path === pathname);
-        
+        const matchingRoute = this.findMatchingRoute(routes, pathname);
+
         this.setActiveComponent(
           matchingRoute ? matchingRoute.component : NotFoundComponent
         );
@@ -121,6 +121,45 @@ class RouterStore {
       { fireImmediately: true, name: "Route Matching Reaction" }
     );
   };
+
+  /**
+   * Recursively searches for a matching route in the routes array.
+   * @param routes - The routes to search through.
+   * @param pathname - The current pathname to match against.
+   * @returns The matching route or undefined if no match is found.
+   */
+  private findMatchingRoute(
+    routes: Route[],
+    pathname: string,
+    basePath = ""
+  ): Route | undefined {
+    for (const route of routes) {
+      // Combine basePath and route.path, then normalize slashes.
+      const combinedPath = [basePath, route.path].join("/");
+      let fullPath = combinedPath.replace(/\/+/g, "/");
+
+      // Remove trailing slash unless it's the root path.
+      if (fullPath !== "/" && fullPath.endsWith("/")) {
+        fullPath = fullPath.slice(0, -1);
+      }
+
+      if (fullPath === pathname) {
+        return route;
+      }
+
+      if (route.children) {
+        const childMatch = this.findMatchingRoute(
+          route.children,
+          pathname,
+          fullPath
+        );
+        if (childMatch) {
+          return childMatch;
+        }
+      }
+    }
+    return undefined;
+  }
 
   /**
    * Renders the currently active component

@@ -100,4 +100,44 @@ describe("RouterStore", () => {
     expect(removeListenerSpy).toHaveBeenCalledWith("popstate", store.handlePopState);
     expect(disposeReactionSpy).toHaveBeenCalled();
   });
+
+  describe("with nested routes", () => {
+    const TeamComponent = { type: "div", props: { children: "Team" } } as ReactElement;
+    const nestedRoutes: Route[] = [
+      {
+        path: "/",
+        component: HomeComponent,
+        children: [
+          {
+            path: "about",
+            component: AboutComponent,
+            children: [
+              {
+                path: "/team",
+                component: TeamComponent,
+              },
+            ],
+          },
+        ],
+      },
+    ];
+
+    it("should match a nested route", () => {
+      store.matchRoutes(nestedRoutes, NotFoundComponent);
+      store.navigate("/about/team");
+      expect(store.activeComponent).toStrictEqual(TeamComponent);
+    });
+
+    it("should match a first-level route with children", () => {
+      store.matchRoutes(nestedRoutes, NotFoundComponent);
+      store.navigate("/about");
+      expect(store.activeComponent).toStrictEqual(AboutComponent);
+    });
+
+    it("should set the active component to the NotFoundComponent for an unknown nested route", () => {
+      store.matchRoutes(nestedRoutes, NotFoundComponent);
+      store.navigate("/about/unknown");
+      expect(store.activeComponent).toStrictEqual(NotFoundComponent);
+    });
+  });
 });

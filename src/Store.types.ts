@@ -7,6 +7,11 @@ export type Route = {
    */
   component: ReactElement;
   /**
+   * Child routes
+   * @note Not all routes need to have children, but if they do, they will be rendered inside the parent route's component.
+   */
+  children?: Route[];
+  /**
    * A callback function that loads data before rendering the component.
    * @todo Add support for onLoaderSuccess and onLoaderError
    */
@@ -19,8 +24,7 @@ export type Route = {
   /**
    * A callback function that is called when the loader throws.
    * @todo Add support for onLoaderSuccess and onLoaderError
-   * @param error  
+   * @param error
    */
   onLoaderError?: (error: unknown) => void;
 };
-

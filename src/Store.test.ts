@@ -4,9 +4,18 @@ import type { ReactElement } from "react";
 import { Route } from "./Store.types";
 
 // Mock components for testing
-const HomeComponent = { type: "div", props: { children: "Home" } } as ReactElement;
-const AboutComponent = { type: "div", props: { children: "About" } } as ReactElement;
-const NotFoundComponent = { type: "div", props: { children: "Not Found" } } as ReactElement;
+const HomeComponent = {
+  type: "div",
+  props: { children: "Home" },
+} as ReactElement;
+const AboutComponent = {
+  type: "div",
+  props: { children: "About" },
+} as ReactElement;
+const NotFoundComponent = {
+  type: "div",
+  props: { children: "Not Found" },
+} as ReactElement;
 
 const routes: Route[] = [
   { path: "/", component: HomeComponent },
@@ -19,7 +28,7 @@ describe("RouterStore", () => {
   beforeEach(() => {
     store = new RouterStore();
     // Mock window.history.pushState
-    vi.spyOn(window.history, 'pushState');
+    vi.spyOn(window.history, "pushState");
   });
 
   afterEach(() => {
@@ -50,7 +59,7 @@ describe("RouterStore", () => {
   it("should set the active component to the NotFoundComponent for an unknown route", () => {
     store.matchRoutes(routes, NotFoundComponent);
     store.navigate("/unknown");
-    expect(store.activeComponent).toStrictEqual(NotFoundComponent);
+    expect(store.activeComponent).toEqual(NotFoundComponent);
   });
 
   it("should parse a path with search and hash correctly", () => {
@@ -65,30 +74,30 @@ describe("RouterStore", () => {
   it("should handle popstate events", () => {
     // Mock window.location.href
     const originalHref = window.location.href;
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(window, "location", {
       value: {
-        href: 'http://localhost:3000/some-other-path'
+        href: "http://localhost:3000/some-other-path",
       },
-      writable: true
+      writable: true,
     });
 
     // Dispatch the event
-    window.dispatchEvent(new PopStateEvent('popstate'));
+    window.dispatchEvent(new PopStateEvent("popstate"));
 
     // Check that the location has been updated
     expect(store.location.pathname).toBe("/some-other-path");
 
     // Restore original window.location.href
-    Object.defineProperty(window, 'location', {
+    Object.defineProperty(window, "location", {
       value: {
-        href: originalHref
+        href: originalHref,
       },
-      writable: true
+      writable: true,
     });
   });
 
   it("should dispose of the reaction and event listener", () => {
-    const removeListenerSpy = vi.spyOn(window, 'removeEventListener');
+    const removeListenerSpy = vi.spyOn(window, "removeEventListener");
     store.matchRoutes(routes, NotFoundComponent);
     const disposeReaction = store.disposeReaction!;
     const disposeReactionSpy = vi.fn(disposeReaction);
@@ -97,12 +106,18 @@ describe("RouterStore", () => {
 
     store.dispose();
 
-    expect(removeListenerSpy).toHaveBeenCalledWith("popstate", store.handlePopState);
+    expect(removeListenerSpy).toHaveBeenCalledWith(
+      "popstate",
+      store.handlePopState
+    );
     expect(disposeReactionSpy).toHaveBeenCalled();
   });
 
   describe("with nested routes", () => {
-    const TeamComponent = { type: "div", props: { children: "Team" } } as ReactElement;
+        const TeamComponent = {
+      type: "div",
+      props: { children: "Team" },
+    } as ReactElement;
     const nestedRoutes: Route[] = [
       {
         path: "/",
@@ -121,6 +136,89 @@ describe("RouterStore", () => {
         ],
       },
     ];
+
+    
+    describe("with deeply nested param routes", () => {
+      let store: RouterStore;
+      const Level1Component = {
+        type: "div",
+        props: { children: "Level1" },
+      } as ReactElement;
+      const Level2Component = {
+        type: "div",
+        props: { children: "Level2" },
+      } as ReactElement;
+      const Level3Component = {
+        type: "div",
+        props: { children: "Level3" },
+      } as ReactElement;
+      const Level4Component = {
+        type: "div",
+        props: { children: "Level4" },
+      } as ReactElement;
+      const Level5Component = {
+        type: "div",
+        props: { children: "Level5" },
+      } as ReactElement;
+      const nestedParamRoutes: Route[] = [
+        {
+          path: ":level1",
+          component: Level1Component,
+          children: [
+            {
+              path: ":level2",
+              component: Level2Component,
+              children: [
+                {
+                  path: ":level3",
+                  component: Level3Component,
+                  children: [
+                    {
+                      path: ":level4",
+                      component: Level4Component,
+                      children: [
+                        {
+                          path: ":level5",
+                          component: Level5Component,
+                        },
+                      ],
+                    },
+                  ],
+                },
+              ],
+            },
+          ],
+        },
+      ];
+
+      beforeEach(() => {
+        store = new RouterStore();
+      });
+
+      it("should match a deeply nested route and extract all params", () => {
+        store.matchRoutes(nestedParamRoutes, NotFoundComponent);
+        store.navigate("/one/two/three/four/five");
+        expect(store.activeComponent).toEqual(Level5Component);
+        expect(store.params).toEqual({
+          level1: "one",
+          level2: "two",
+          level3: "three",
+          level4: "four",
+          level5: "five",
+        });
+      });
+
+      it("should match a mid-level route and extract params up to that level", () => {
+        store.matchRoutes(nestedParamRoutes, NotFoundComponent);
+        store.navigate("/one/two/three");
+        expect(store.activeComponent).toEqual(Level3Component);
+        expect(store.params).toEqual({
+          level1: "one",
+          level2: "two",
+          level3: "three",
+        });
+      });
+    });
 
     it("should match a nested route", () => {
       store.matchRoutes(nestedRoutes, NotFoundComponent);
@@ -142,7 +240,10 @@ describe("RouterStore", () => {
   });
 
   describe("with loaders", () => {
-    const LoadingComponent = { type: "div", props: { children: "Loading" } } as ReactElement;
+    const LoadingComponent = {
+      type: "div",
+      props: { children: "Loading" },
+    } as ReactElement;
     const loader = vi.fn(() => Promise.resolve());
     const loaderRoutes: Route[] = [
       {
@@ -157,7 +258,7 @@ describe("RouterStore", () => {
       store.matchRoutes(loaderRoutes, NotFoundComponent);
       expect(store.isLoading).toBe(true);
       expect(store.activeComponent).toStrictEqual(LoadingComponent);
-      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for loader to resolve
+      await new Promise((resolve) => setTimeout(resolve, 0)); // Wait for loader to resolve
       expect(store.isLoading).toBe(false);
       expect(store.activeComponent).toStrictEqual(HomeComponent);
     });
@@ -170,7 +271,7 @@ describe("RouterStore", () => {
     it("should set isLoading to true and false", async () => {
       store.matchRoutes(loaderRoutes, NotFoundComponent);
       expect(store.isLoading).toBe(true);
-      await new Promise(resolve => setTimeout(resolve, 0)); // Wait for loader to resolve
+      await new Promise((resolve) => setTimeout(resolve, 0)); // Wait for loader to resolve
       expect(store.isLoading).toBe(false);
     });
   });

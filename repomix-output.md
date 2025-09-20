@@ -62,6 +62,11 @@ export type Route = {
    */
   component: ReactElement;
   /**
+   * Child routes
+   * @note Not all routes need to have children, but if they do, they will be rendered inside the parent route's component.
+   */
+  children?: Route[];
+  /**
    * A callback function that loads data before rendering the component.
    * @todo Add support for onLoaderSuccess and onLoaderError
    */
@@ -74,13 +79,18 @@ export type Route = {
   /**
    * A callback function that is called when the loader throws.
    * @todo Add support for onLoaderSuccess and onLoaderError
-   * @param error  
+   * @param error
    */
   onLoaderError?: (error: unknown) => void;
 };
 ⋮----
 /**
    * The React component to render for this route.
+   */
+⋮----
+/**
+   * Child routes
+   * @note Not all routes need to have children, but if they do, they will be rendered inside the parent route's component.
    */
 ⋮----
 /**
@@ -96,7 +106,7 @@ export type Route = {
 /**
    * A callback function that is called when the loader throws.
    * @todo Add support for onLoaderSuccess and onLoaderError
-   * @param error  
+   * @param error
    */
 ```
 
@@ -120,6 +130,10 @@ import { Route } from "./Store.types";
 // Restore original window.location.href
 ⋮----
 // @ts-ignore
+⋮----
+await new Promise(resolve => setTimeout(resolve, 0)); // Wait for loader to resolve
+⋮----
+await new Promise(resolve => setTimeout(resolve, 0)); // Wait for loader to resolve
 ```
 
 ## File: src/Store.ts
@@ -153,6 +167,11 @@ class RouterStore
 ⋮----
 /**
    * A flag to indicate if the route is currently loading.
+   * @observable
+   */
+⋮----
+/**
+   * Route parameters extracted from the URL.
    * @observable
    */
 ⋮----
@@ -197,6 +216,30 @@ setActiveComponent(component: ReactElement)
    * @param {Route[]} routes - An array of route objects.
    * @param {ReactElement} NotFoundComponent - The component to display when no route matches.
    */
+⋮----
+/**
+   * Handles the logic for matching a route and updating the store.
+   * @param {Route[]} routes - An array of route objects.
+   * @param {string} pathname - The current pathname to match against.
+   * @param {ReactElement} NotFoundComponent - The component to display when no route matches.
+   */
+private async handleRouteMatch(
+    routes: Route[],
+    pathname: string,
+    NotFoundComponent: ReactElement
+)
+⋮----
+/**
+   * Recursively searches for a matching route in the routes array.
+   * @param routes - The routes to search through.
+   * @param pathname - The current pathname to match against.
+   * @returns The matching route and extracted params, or undefined if no match is found.
+   */
+private findMatchingRoute(
+    routes: Route[],
+    pathname: string,
+    basePath = ""
+):
 ⋮----
 /**
    * Renders the currently active component

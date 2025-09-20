@@ -30,6 +30,11 @@ class RouterStore {
    */
   isLoading = false;
   /**
+   * Route parameters extracted from the URL.
+   * @observable
+   */
+  params: Record<string, string> = {};
+  /**
    * A disposer for the MobX reaction to prevent memory leaks.
    */
   disposeReaction: IReactionDisposer | null = null;
@@ -42,6 +47,7 @@ class RouterStore {
       location: observable,
       isLoading: observable,
       activeComponent: observable.ref,
+      params: observable,
       navigate: action,
       setActiveComponent: action,
       renderComponent: computed,
@@ -127,12 +133,16 @@ class RouterStore {
     pathname: string,
     NotFoundComponent: ReactElement
   ) {
-    const matchingRoute = this.findMatchingRoute(routes, pathname);
+    const match = this.findMatchingRoute(routes, pathname);
 
-    if (!matchingRoute) {
+    if (!match) {
       this.setActiveComponent(NotFoundComponent);
+      this.params = {};
       return;
     }
+
+    const { route: matchingRoute, params } = match;
+    this.params = params;
 
     if (!matchingRoute.loader) {
       this.setActiveComponent(matchingRoute.component);
@@ -145,7 +155,7 @@ class RouterStore {
     }
 
     try {
-      await matchingRoute.loader();
+      await matchingRoute.loader?.(this.params);
       this.setActiveComponent(matchingRoute.component);
     } catch (error) {
       if (matchingRoute.onLoaderError) {
@@ -159,28 +169,62 @@ class RouterStore {
   }
 
   /**
+   * Extracts params from a route path (single value per param)
+   */
+  private extractParams(
+    routePath: string,
+    pathname: string
+  ): Record<string, string> {
+    const routeSegments = routePath.split("/").filter(Boolean);
+    const pathSegments = pathname.split("/").filter(Boolean);
+    const params: Record<string, string> = {};
+    let i = 0;
+    for (let j = 0; j < routeSegments.length; j++) {
+      const segment = routeSegments[j];
+      if (segment.startsWith(":")) {
+        const paramName = segment.replace(/^:/, "");
+        params[paramName] = pathSegments[i] || "";
+        i++;
+      } else {
+        if (segment !== pathSegments[i]) return {};
+        i++;
+      }
+    }
+    // Ensure all param values are strings
+    Object.keys(params).forEach((key) => {
+      if (Array.isArray(params[key])) {
+        params[key] = (params[key] as any[]).join("/");
+      }
+    });
+    return params;
+  }
+  
+  /**
    * Recursively searches for a matching route in the routes array.
    * @param routes - The routes to search through.
    * @param pathname - The current pathname to match against.
-   * @returns The matching route or undefined if no match is found.
+   * @returns The matching route and extracted params, or undefined if no match is found.
    */
   private findMatchingRoute(
     routes: Route[],
     pathname: string,
     basePath = ""
-  ): Route | undefined {
+  ): { route: Route; params: Record<string, string> } | undefined {
     for (const route of routes) {
-      // Combine basePath and route.path, then normalize slashes.
       const combinedPath = [basePath, route.path].join("/");
       let fullPath = combinedPath.replace(/\/+/g, "/");
-
-      // Remove trailing slash unless it's the root path.
       if (fullPath !== "/" && fullPath.endsWith("/")) {
         fullPath = fullPath.slice(0, -1);
       }
 
-      if (fullPath === pathname) {
-        return route;
+      // Only support single param values
+      const routePattern = fullPath.replace(/:(\w+)/g, "([^/]+)");
+      const regex = new RegExp(`^${routePattern}$`);
+      const match = pathname.match(regex);
+
+      if (match) {
+        const params = this.extractParams(fullPath, pathname);
+        return { route, params };
       }
 
       if (route.children) {

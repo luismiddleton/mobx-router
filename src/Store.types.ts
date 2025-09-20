@@ -15,7 +15,7 @@ export type Route = {
    * A callback function that loads data before rendering the component.
    * @todo Add support for onLoaderSuccess and onLoaderError
    */
-  loader?: () => Promise<void>;
+  loader?: (params?: Record<string, string>) => Promise<void>;
   /**
    * A React component to display while the route is loading.
    * @todo Add support for onLoaderSuccess and onLoaderError
